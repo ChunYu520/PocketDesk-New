@@ -31,4 +31,23 @@
   <ItemGroup>
     <None Update="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!--
+    WinUI 3 的 XAML 资源（.xbf / .pri）默认不会随 dotnet publish 复制，
+    缺少这些文件会导致安装后的设置界面在 Microsoft.UI.Xaml.dll 中 0xc000027b 崩溃。
+  -->
+  <Target Name="CopyWinUIResourcesToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_WinUIPublishPri Include="$(TargetDir)$(AssemblyName).pri" Condition="Exists('$(TargetDir)$(AssemblyName).pri')" />
+      <_WinUIPublishXbf Include="$(TargetDir)**\*.xbf" />
+      <_WinUIPublishAssets Include="$(TargetDir)Assets\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_WinUIPublishPri)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WinUIPublishXbf)"
+          DestinationFiles="@(_WinUIPublishXbf->'$(PublishDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WinUIPublishAssets)"
+          DestinationFiles="@(_WinUIPublishAssets->'$(PublishDir)Assets\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>
