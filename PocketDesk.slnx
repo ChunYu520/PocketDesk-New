@@ -1,0 +1,21 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/PocketDesk.Shared/PocketDesk.Shared.csproj" />
+    <Project Path="src/PocketDesk.Widgets.Abstractions/PocketDesk.Widgets.Abstractions.csproj" />
+    <Project Path="src/PocketDesk.Core/PocketDesk.Core.csproj" />
+    <Project Path="src/PocketDesk.Host/PocketDesk.Host.csproj" />
+    <Project Path="src/PocketDesk.Widgets.Weather/PocketDesk.Widgets.Weather.csproj" />
+    <Project Path="src/PocketDesk.Settings/PocketDesk.Settings.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PocketDesk.Core.Tests/PocketDesk.Core.Tests.csproj" />
+    <Project Path="tests/PocketDesk.Verification/PocketDesk.Verification.csproj" />
+  </Folder>
+</Solution>

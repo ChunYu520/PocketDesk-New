@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="PocketDesk-New"
+           Manufacturer="PocketDesk"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="A3E6B7C4-2F1D-4C8A-9B5E-7D6F0A1C2E33"
+           Scope="perUser"
+           Compressed="yes"
+           Codepage="936"
+           Language="2052">
+
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="已安装更新版本的 PocketDesk-New。" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Property Id="ALLUSERS" Value="2" />
+    <Property Id="MSIINSTALLPERUSER" Value="1" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseFile)" />
+    <ui:WixUI Id="WixUI_FeatureTree" />
+
+    <Icon Id="AppIcon" SourceFile="$(var.PublishDir)\Assets\AppIcon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ARPCOMMENTS" Value="悬浮在壁纸上的桌面组件层" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsDir" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="PocketDesk-New" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuDir" Name="PocketDesk-New" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder">
+      <Directory Id="DesktopDir" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="AppFiles">
+      <Files Include="$(var.PublishDir)\**" Directory="INSTALLFOLDER" />
+    </ComponentGroup>
+
+    <Component Id="StartMenuShortcuts" Directory="AppMenuDir" Guid="3A7E4C1D-9B25-4F6A-8C11-5D2E7A9B4C60">
+      <Shortcut Id="HostStartMenuShortcut"
+                Name="PocketDesk-New"
+                Description="悬浮在壁纸上的桌面组件层"
+                Target="[INSTALLFOLDER]PocketDesk.Host.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <Shortcut Id="SettingsStartMenuShortcut"
+                Name="PocketDesk 设置"
+                Description="PocketDesk-New 全局设置与组件管理"
+                Target="[INSTALLFOLDER]Settings\PocketDesk.Settings.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="RemoveAppMenuDir" Directory="AppMenuDir" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\PocketDesk-New" Name="StartMenuShortcuts" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopDir" Guid="9C2B6E8F-4A31-4D57-B0E2-1F8A6C3D5E74">
+      <Shortcut Id="HostDesktopShortcut"
+                Name="PocketDesk-New"
+                Description="悬浮在壁纸上的桌面组件层"
+                Target="[INSTALLFOLDER]PocketDesk.Host.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RegistryValue Root="HKCU" Key="Software\PocketDesk-New" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Feature Id="MainFeature"
+             Title="PocketDesk-New 主程序"
+             Description="桌面组件层、WinUI 3 设置界面、内置收纳盒与占位天气组件。"
+             Level="1" Display="1" AllowAbsent="no">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcuts" />
+    </Feature>
+
+    <Feature Id="DesktopShortcutFeature"
+             Title="桌面快捷方式"
+             Description="在桌面创建 PocketDesk-New 组件层快捷方式（可取消勾选）。"
+             Level="1" Display="2">
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <!-- 卸载/升级前结束正在运行的宿主和设置进程，避免文件占用导致 MSI 失败。 -->
+    <CustomAction Id="StopHost"
+                  Directory="SystemFolder"
+                  ExeCommand="taskkill.exe /IM PocketDesk.Host.exe /F /T"
+                  Execute="deferred"
+                  Impersonate="yes"
+                  Return="ignore" />
+    <CustomAction Id="StopSettings"
+                  Directory="SystemFolder"
+                  ExeCommand="taskkill.exe /IM PocketDesk.Settings.exe /F /T"
+                  Execute="deferred"
+                  Impersonate="yes"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="StopHost" Before="RemoveFiles" Condition='REMOVE~="ALL"' />
+      <Custom Action="StopSettings" Before="RemoveFiles" Condition='REMOVE~="ALL"' />
+    </InstallExecuteSequence>
+  </Package>
+</Wix>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RootNamespace>PocketDesk.Widgets.Weather</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Version>1.0.0</Version>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <ProjectReference Include="..\PocketDesk.Shared\PocketDesk.Shared.csproj" />
+    <ProjectReference Include="..\PocketDesk.Widgets.Abstractions\PocketDesk.Widgets.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!--
+    插件化验证：组件作为独立程序集编译，构建后自动复制到宿主输出目录的 Widgets 文件夹。
+    宿主不引用本程序集，只通过 IWidget 发现并加载，因此新增组件无需修改宿主代码。
+  -->
+  <Target Name="CopyWidgetToHostOutput" AfterTargets="Build" Condition="'$(TargetDir)' != ''">
+    <PropertyGroup>
+      <HostWidgetsDir>$(MSBuildThisFileDirectory)..\PocketDesk.Host\bin\$(Configuration)\net10.0\Widgets</HostWidgetsDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(HostWidgetsDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(HostWidgetsDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(HostWidgetsDir)" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+  </Target>
+</Project>

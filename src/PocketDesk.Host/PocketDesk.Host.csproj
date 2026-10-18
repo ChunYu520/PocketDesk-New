@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RootNamespace>PocketDesk.Host</RootNamespace>
+    <AssemblyName>PocketDesk.Host</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PocketDesk.Shared\PocketDesk.Shared.csproj" />
+    <ProjectReference Include="..\PocketDesk.Core\PocketDesk.Core.csproj" />
+    <ProjectReference Include="..\PocketDesk.Widgets.Abstractions\PocketDesk.Widgets.Abstractions.csproj" />
+    <!-- 构建顺序依赖：Weather 只是插件，不参与编译引用；构建后复制到 Widgets 目录由宿主动态发现。 -->
+    <ProjectReference Include="..\PocketDesk.Widgets.Weather\PocketDesk.Widgets.Weather.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="WidgetPluginAssembly"
+                      Private="false" />
+  </ItemGroup>
+
+  <Target Name="CopyWidgetPlugins" AfterTargets="Build">
+    <ItemGroup>
+      <_WidgetPluginFile Include="@(WidgetPluginAssembly)" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutDir)Widgets" />
+    <Copy SourceFiles="@(_WidgetPluginFile)" DestinationFolder="$(OutDir)Widgets" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyWidgetPluginsToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_WidgetPluginPublishFile Include="@(WidgetPluginAssembly)" />
+    </ItemGroup>
+    <MakeDir Directories="$(PublishDir)Widgets" />
+    <Copy SourceFiles="@(_WidgetPluginPublishFile)" DestinationFolder="$(PublishDir)Widgets" SkipUnchangedFiles="true" />
+  </Target>
+
+  <ItemGroup>
+    <None Update="app.manifest" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
