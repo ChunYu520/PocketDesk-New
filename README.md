@@ -4,6 +4,8 @@
 
 PocketDesk-New 用 **Avalonia** 实现透明、无焦点、停靠桌面层的组件宿主，用 **WinUI 3** 实现独立的设置界面，两者通过共享契约 + 命名管道 IPC 协作。它复用了旧版 PocketDesk 的 SQLite / Journal / 文件安全逻辑，但把“多窗口收纳盒”重构成了“一个组件层上的卡片”。
 
+> [下载 v1.0.1 安装包](https://github.com/ChunYu520/PocketDesk-New/releases/tag/v1.0.1) · [反馈问题](https://github.com/ChunYu520/PocketDesk-New/issues)
+
 ## 1.0.1 更新
 
 - **Win11 Fluent 视觉重做**：卡片改为圆角渐变玻璃、胶囊搜索框、图标徽章、层级化标题/副标题、底部状态栏；按钮补齐 hover / pressed / cursor 状态。
