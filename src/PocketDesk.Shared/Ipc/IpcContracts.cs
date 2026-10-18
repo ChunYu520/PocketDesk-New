@@ -26,6 +26,7 @@ public static class IpcCommands
     public const string HideAll = "host.hideAll";
     public const string OpenDataDirectory = "host.openDataDir";
     public const string OpenLogDirectory = "host.openLogDir";
+    public const string OpenSettings = "host.openSettings";
     public const string ExportDiagnostics = "host.exportDiagnostics";
     public const string Shutdown = "host.shutdown";
 }

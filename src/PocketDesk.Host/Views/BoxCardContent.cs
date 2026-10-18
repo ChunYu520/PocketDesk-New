@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
+using Avalonia.Styling;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -41,15 +43,16 @@ public sealed class BoxCardContent : UserControl
 
         _search = new TextBox
         {
-            Watermark = "搜索收纳项",
-            Height = 30,
-            FontSize = 12,
-            Padding = new Thickness(28, 4, 8, 4),
+            Watermark = "搜索",
+            Height = 34,
+            FontFamily = new FontFamily("Segoe UI Variable Text,Segoe UI,Microsoft YaHei UI"),
+            FontSize = 12.5,
+            Padding = new Thickness(32, 5, 10, 5),
             Background = Solid(host.Theme.Palette.InputBackground),
             Foreground = Solid(host.Theme.Palette.TextPrimary),
             BorderBrush = Solid(host.Theme.Palette.CardBorder),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
+            CornerRadius = new CornerRadius(10),
             VerticalContentAlignment = VerticalAlignment.Center,
         };
         _search.TextChanged += (_, _) => _card.SearchText = _search.Text ?? string.Empty;
@@ -62,16 +65,21 @@ public sealed class BoxCardContent : UserControl
                 e.Handled = true;
             }
         };
-        _search.GotFocus += (_, _) => _host.RequestInputFocus(_card, _search);
+        _search.GotFocus += (_, _) =>
+        {
+            _search.BorderBrush = Solid(_host.Theme.Palette.Accent);
+            _host.RequestInputFocus(_card, _search);
+        };
+        _search.LostFocus += (_, _) => _search.BorderBrush = Solid(_host.Theme.Palette.CardBorder);
 
         var searchIcon = new TextBlock
         {
             Text = "\uE721",
             FontFamily = new FontFamily("Segoe Fluent Icons,Segoe MDL2 Assets"),
-            FontSize = 12,
+            FontSize = 13,
             Foreground = Solid(host.Theme.Palette.TextMuted),
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(10, 0, 0, 0),
+            Margin = new Thickness(11, 0, 0, 0),
             IsHitTestVisible = false,
         };
         var searchGrid = new Grid();
@@ -87,6 +95,16 @@ public sealed class BoxCardContent : UserControl
             ItemsSource = _card.VisibleItems,
             ItemTemplate = new FuncDataTemplate<ItemViewModel>((item, _) => BuildItem(item)),
         };
+        _list.Styles.Add(new Style(x => x.OfType<ListBoxItem>())
+        {
+            Setters =
+            {
+                new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
+                new Setter(Layoutable.MarginProperty, new Thickness(0)),
+                new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
+                new Setter(Layoutable.MinHeightProperty, 0d),
+            },
+        });
         _list.SelectionChanged += (_, _) =>
         {
             var selected = _list.SelectedItems?.OfType<ItemViewModel>().ToHashSet() ?? new HashSet<ItemViewModel>();
@@ -101,14 +119,15 @@ public sealed class BoxCardContent : UserControl
             Content = _list,
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-            Padding = new Thickness(0, 4, 2, 0),
+            Padding = new Thickness(0, 2, 2, 0),
         };
 
         _emptyHint = new TextBlock
         {
-            Text = "把文件拖到这里\n或右键新建文件夹",
+            Text = "拖入文件开始收纳\n右键可新建文件夹",
             TextAlignment = TextAlignment.Center,
-            FontSize = 12,
+            FontSize = 12.5,
+            LineHeight = 20,
             Foreground = Solid(host.Theme.Palette.TextMuted),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
@@ -136,13 +155,14 @@ public sealed class BoxCardContent : UserControl
             Background = Solid(host.Theme.Palette.DropOverlay),
             BorderBrush = Solid(host.Theme.Palette.Accent),
             BorderThickness = new Thickness(2),
-            CornerRadius = new CornerRadius(12),
-            Margin = new Thickness(6),
+            CornerRadius = new CornerRadius(14),
+            Margin = new Thickness(4),
             IsVisible = false,
             IsHitTestVisible = false,
             Child = new TextBlock
             {
                 Text = "松开以收纳到此收纳盒",
+                FontFamily = new FontFamily("Segoe UI Variable Text,Segoe UI,Microsoft YaHei UI"),
                 Foreground = Solid(host.Theme.Palette.TextPrimary),
                 FontSize = 13,
                 FontWeight = FontWeight.SemiBold,
@@ -154,7 +174,7 @@ public sealed class BoxCardContent : UserControl
         _root = new Grid
         {
             RowDefinitions = new RowDefinitions("Auto,*"),
-            RowSpacing = 8,
+            RowSpacing = 6,
         };
         _root.Children.Add(searchGrid);
         var body = new Grid();
@@ -315,31 +335,48 @@ public sealed class BoxCardContent : UserControl
             var name = new TextBlock
             {
                 Text = item.Name,
-                FontSize = 11,
+                FontFamily = new FontFamily("Segoe UI Variable Text,Segoe UI,Microsoft YaHei UI"),
+                FontSize = 11.5,
                 Foreground = Solid(palette.TextPrimary),
                 TextAlignment = TextAlignment.Center,
                 TextWrapping = TextWrapping.Wrap,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 MaxLines = Math.Max(1, _card.NameLines),
-                MaxWidth = Math.Max(64, _card.IconSize + 28),
+                MaxWidth = Math.Max(70, _card.IconSize + 30),
                 HorizontalAlignment = HorizontalAlignment.Center,
             };
 
             var stack = new StackPanel
             {
-                Spacing = 4,
+                Spacing = 5,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Children = { iconLayer, name },
             };
-            root = new Border
+            var tile = new Border
             {
-                Width = Math.Max(76, _card.IconSize + 36),
-                Height = _card.IconSize + Math.Max(1, _card.NameLines) * 16 + 22,
-                Padding = new Thickness(4),
-                CornerRadius = new CornerRadius(10),
+                Width = Math.Max(84, _card.IconSize + 40),
+                Height = _card.IconSize + Math.Max(1, _card.NameLines) * 16 + 28,
+                Padding = new Thickness(6, 6, 6, 5),
+                Margin = new Thickness(2),
+                CornerRadius = new CornerRadius(9),
                 Background = Brushes.Transparent,
                 Child = stack,
             };
+            root = tile;
+            void RefreshTile()
+            {
+                tile.Background = item.IsSelected
+                    ? Solid(Color.FromArgb(34, palette.Accent.R, palette.Accent.G, palette.Accent.B))
+                    : Brushes.Transparent;
+            }
+            item.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ItemViewModel.IsSelected))
+                {
+                    RefreshTile();
+                }
+            };
+            RefreshTile();
         }
         else
         {
@@ -354,12 +391,12 @@ public sealed class BoxCardContent : UserControl
             {
                 Text = item.KindGlyph,
                 FontFamily = new FontFamily("Segoe Fluent Icons,Segoe MDL2 Assets"),
-                FontSize = 18,
+                FontSize = 17,
                 Foreground = Solid(palette.TextSecondary),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
             };
-            var iconLayer = new Grid { Width = 28, Height = 28, VerticalAlignment = VerticalAlignment.Center };
+            var iconLayer = new Grid { Width = 32, Height = 32, VerticalAlignment = VerticalAlignment.Center };
             iconLayer.Children.Add(placeholder);
             iconLayer.Children.Add(icon);
             item.PropertyChanged += (_, e) =>
@@ -379,32 +416,50 @@ public sealed class BoxCardContent : UserControl
                     new TextBlock
                     {
                         Text = item.Name,
-                        FontSize = 12,
+                        FontFamily = new FontFamily("Segoe UI Variable Text,Segoe UI,Microsoft YaHei UI"),
+                        FontSize = 12.5,
                         Foreground = Solid(palette.TextPrimary),
                         TextTrimming = TextTrimming.CharacterEllipsis,
                     },
                     new TextBlock
                     {
                         Text = item.TypeHint,
-                        FontSize = 10,
+                        FontFamily = new FontFamily("Segoe UI Variable Text,Segoe UI,Microsoft YaHei UI"),
+                        FontSize = 10.5,
                         Foreground = Solid(palette.TextMuted),
                         TextTrimming = TextTrimming.CharacterEllipsis,
                     },
                 },
             };
 
-            var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("36,*"), ColumnSpacing = 8 };
+            var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("40,*"), ColumnSpacing = 8 };
             grid.Children.Add(iconLayer);
             Grid.SetColumn(text, 1);
             grid.Children.Add(text);
-            root = new Border
+            var row = new Border
             {
-                Height = 44,
-                Padding = new Thickness(6, 3),
+                Height = 48,
+                Padding = new Thickness(8, 4),
+                Margin = new Thickness(1),
                 CornerRadius = new CornerRadius(8),
                 Background = Brushes.Transparent,
                 Child = grid,
             };
+            root = row;
+            void RefreshRow()
+            {
+                row.Background = item.IsSelected
+                    ? Solid(Color.FromArgb(34, palette.Accent.R, palette.Accent.G, palette.Accent.B))
+                    : Brushes.Transparent;
+            }
+            item.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ItemViewModel.IsSelected))
+                {
+                    RefreshRow();
+                }
+            };
+            RefreshRow();
         }
 
         if (item.IsMissing)
@@ -426,8 +481,19 @@ public sealed class BoxCardContent : UserControl
         root.AddHandler(PointerPressedEvent, (_, e) => OnItemPointerPressed(item, e), RoutingStrategies.Tunnel, handledEventsToo: true);
         root.AddHandler(PointerMovedEvent, (_, e) => OnItemPointerMoved(item, e), RoutingStrategies.Tunnel, handledEventsToo: true);
         root.AddHandler(PointerReleasedEvent, (_, e) => OnItemPointerReleased(item, e), RoutingStrategies.Tunnel, handledEventsToo: true);
-        root.PointerEntered += (_, _) => root.Background = Solid(palette.Hover);
-        root.PointerExited += (_, _) => root.Background = Brushes.Transparent;
+        root.PointerEntered += (_, _) =>
+        {
+            if (!item.IsSelected)
+            {
+                root.Background = Solid(palette.Hover);
+            }
+        };
+        root.PointerExited += (_, _) =>
+        {
+            root.Background = item.IsSelected
+                ? Solid(Color.FromArgb(34, palette.Accent.R, palette.Accent.G, palette.Accent.B))
+                : Brushes.Transparent;
+        };
         return root;
     }
 

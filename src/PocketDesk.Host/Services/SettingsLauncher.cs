@@ -25,8 +25,15 @@ public static class SettingsLauncher
                 WorkingDirectory = Path.GetDirectoryName(exe) ?? AppContext.BaseDirectory,
             };
 
-            Process.Start(startInfo);
-            LogService.Info($"已启动设置界面：{exe}");
+            var process = Process.Start(startInfo);
+            if (process is null)
+            {
+                host.ShowToast("设置界面启动失败：无法创建进程。");
+                LogService.Warn($"设置界面进程创建失败：{exe}");
+                return;
+            }
+
+            LogService.Info($"已启动设置界面：{exe} (PID {process.Id})");
         }
         catch (Exception ex)
         {

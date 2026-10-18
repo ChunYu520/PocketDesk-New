@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using PocketDesk.Shared;
@@ -13,6 +14,8 @@ namespace PocketDesk.Widgets.Weather;
 /// </summary>
 public sealed class WeatherWidget : WidgetBase
 {
+    private static readonly FontFamily UiFont = new("Segoe UI Variable Text,Segoe UI,Microsoft YaHei UI");
+
     public override string Id => AppInfo.WeatherWidgetId;
 
     public override string DisplayName => "天气";
@@ -40,109 +43,140 @@ public sealed class WeatherWidget : WidgetBase
     protected override Control BuildView(IWidgetContext context)
     {
         var accent = Color.Parse(context.GetSetting("accent", "#4CC2FF") ?? "#4CC2FF");
-        var city = context.GetSetting("city", "上海") ?? "上海";
-        var units = context.GetSetting("units", "c") ?? "c";
-        var showFeels = string.Equals(context.GetSetting("showFeelsLike", "true"), "true", StringComparison.OrdinalIgnoreCase);
-        var refresh = context.GetSetting("refreshMinutes", "30") ?? "30";
-
         var root = new Border
         {
-            CornerRadius = new CornerRadius(0),
-            Background = new LinearGradientBrush
-            {
-                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
-                GradientStops =
-                {
-                    new GradientStop(accent, 0),
-                    new GradientStop(Color.FromArgb(0xCC, 0x0B, 0x1B, 0x33), 1),
-                },
-            },
             Padding = new Thickness(18, 14, 18, 16),
-            Child = BuildContent(context, city, units, showFeels, refresh, accent),
+            ClipToBounds = true,
+            Background = Gradient(accent),
+            Child = BuildContent(context, accent),
         };
 
         context.SettingsChanged += (_, _) =>
         {
-            // 设置界面修改后即时重建内容，验证 Schema 驱动配置的闭环。
-            var newCity = context.GetSetting("city", "上海") ?? "上海";
-            var newUnits = context.GetSetting("units", "c") ?? "c";
-            var newShowFeels = string.Equals(context.GetSetting("showFeelsLike", "true"), "true", StringComparison.OrdinalIgnoreCase);
-            var newRefresh = context.GetSetting("refreshMinutes", "30") ?? "30";
             var newAccent = Color.Parse(context.GetSetting("accent", "#4CC2FF") ?? "#4CC2FF");
-            root.Background = new LinearGradientBrush
-            {
-                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
-                GradientStops =
-                {
-                    new GradientStop(newAccent, 0),
-                    new GradientStop(Color.FromArgb(0xCC, 0x0B, 0x1B, 0x33), 1),
-                },
-            };
-            root.Child = BuildContent(context, newCity, newUnits, newShowFeels, newRefresh, newAccent);
+            root.Background = Gradient(newAccent);
+            root.Child = BuildContent(context, newAccent);
         };
 
         return root;
     }
 
-    private static Control BuildContent(
-        IWidgetContext context,
-        string city,
-        string units,
-        bool showFeels,
-        string refresh,
-        Color accent)
+    private static LinearGradientBrush Gradient(Color accent) => new()
     {
+        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+        EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+        GradientStops =
+        {
+            new GradientStop(accent, 0),
+            new GradientStop(Color.FromArgb(0xF2, 0x11, 0x2A, 0x42), 0.62),
+            new GradientStop(Color.FromArgb(0xFF, 0x0C, 0x18, 0x26), 1),
+        },
+    };
+
+    private static Control BuildContent(IWidgetContext context, Color accent)
+    {
+        var city = context.GetSetting("city", "上海") ?? "上海";
+        var units = context.GetSetting("units", "c") ?? "c";
+        var showFeels = string.Equals(context.GetSetting("showFeelsLike", "true"), "true", StringComparison.OrdinalIgnoreCase);
+        var refresh = context.GetSetting("refreshMinutes", "30") ?? "30";
         var isCelsius = !string.Equals(units, "f", StringComparison.OrdinalIgnoreCase);
         var temperature = isCelsius ? "23°" : "73°";
-        var feels = isCelsius ? "体感 25°C" : "体感 77°F";
+        var feels = isCelsius ? "体感 25°" : "体感 77°";
 
-        var panel = new StackPanel { Spacing = 6 };
-        panel.Children.Add(new TextBlock
+        var root = new Grid
+        {
+            RowDefinitions = new RowDefinitions("Auto,*,Auto"),
+        };
+
+        var top = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var cityBlock = new StackPanel { Spacing = 2 };
+        cityBlock.Children.Add(new TextBlock
         {
             Text = city,
-            FontSize = 18,
+            FontFamily = UiFont,
+            FontSize = 16,
             FontWeight = FontWeight.SemiBold,
             Foreground = Brushes.White,
         });
-        panel.Children.Add(new TextBlock
+        cityBlock.Children.Add(new TextBlock
         {
             Text = "局部多云 · 占位数据",
-            FontSize = 12,
-            Foreground = new SolidColorBrush(Colors.White, 0.72),
+            FontFamily = UiFont,
+            FontSize = 11,
+            Foreground = new SolidColorBrush(Colors.White, 0.66),
         });
-        panel.Children.Add(new TextBlock
+        top.Children.Add(cityBlock);
+
+        var badge = new Border
+        {
+            CornerRadius = new CornerRadius(7),
+            Padding = new Thickness(8, 3),
+            Background = new SolidColorBrush(Colors.White, 0.16),
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock
+            {
+                Text = "占位",
+                FontFamily = UiFont,
+                FontSize = 10,
+                Foreground = new SolidColorBrush(Colors.White, 0.9),
+            },
+        };
+        Grid.SetColumn(badge, 1);
+        top.Children.Add(badge);
+        root.Children.Add(top);
+
+        var middle = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 4, 0, 0),
+        };
+        middle.Children.Add(new TextBlock
         {
             Text = temperature,
-            FontSize = 56,
+            FontFamily = UiFont,
+            FontSize = 48,
             FontWeight = FontWeight.Light,
             Foreground = Brushes.White,
-            Margin = new Thickness(0, 2, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
         });
-        if (showFeels)
+        var condition = new StackPanel
         {
-            panel.Children.Add(new TextBlock
+            Spacing = 1,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
             {
-                Text = feels,
-                FontSize = 12,
-                Foreground = new SolidColorBrush(Colors.White, 0.78),
-            });
-        }
+                new TextBlock
+                {
+                    Text = "空气良",
+                    FontFamily = UiFont,
+                    FontSize = 11,
+                    Foreground = new SolidColorBrush(Colors.White, 0.72),
+                },
+                new TextBlock
+                {
+                    Text = showFeels ? feels : "—",
+                    FontFamily = UiFont,
+                    FontSize = 11,
+                    Foreground = new SolidColorBrush(Colors.White, 0.72),
+                },
+            },
+        };
+        middle.Children.Add(condition);
+        Grid.SetRow(middle, 1);
+        root.Children.Add(middle);
 
-        panel.Children.Add(new TextBlock
+        var footer = new Grid
         {
-            Text = $"每 {refresh} 分钟刷新 · 由组件 Schema 配置",
-            FontSize = 11,
-            Foreground = new SolidColorBrush(Colors.White, 0.58),
-            Margin = new Thickness(0, 8, 0, 0),
-        });
-
-        var footer = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            Margin = new Thickness(0, 6, 0, 0),
+        };
         var updated = new TextBlock
         {
-            Text = $"更新于 {DateTime.Now:HH:mm}",
-            FontSize = 11,
+            Text = $"更新于 {DateTime.Now:HH:mm} · 每 {refresh} 分钟",
+            FontFamily = UiFont,
+            FontSize = 10,
             Foreground = new SolidColorBrush(Colors.White, 0.55),
             VerticalAlignment = VerticalAlignment.Center,
         };
@@ -151,22 +185,26 @@ public sealed class WeatherWidget : WidgetBase
         var refreshButton = new Button
         {
             Content = "刷新",
-            FontSize = 11,
+            FontFamily = UiFont,
+            FontSize = 10.5,
             Padding = new Thickness(10, 4),
             Background = new SolidColorBrush(Colors.White, 0.16),
             Foreground = Brushes.White,
             BorderThickness = new Thickness(0),
-            CornerRadius = new CornerRadius(10),
+            CornerRadius = new CornerRadius(8),
+            Cursor = new Cursor(StandardCursorType.Hand),
             HorizontalAlignment = HorizontalAlignment.Right,
         };
-        refreshButton.Click += (_, _) =>
-        {
-            updated.Text = $"更新于 {DateTime.Now:HH:mm}";
-            context.RequestKeyboardFocus();
-        };
+        refreshButton.PointerEntered += (_, _) =>
+            refreshButton.Background = new SolidColorBrush(Colors.White, 0.26);
+        refreshButton.PointerExited += (_, _) =>
+            refreshButton.Background = new SolidColorBrush(Colors.White, 0.16);
+        refreshButton.Click += (_, _) => updated.Text = $"更新于 {DateTime.Now:HH:mm} · 每 {refresh} 分钟";
         Grid.SetColumn(refreshButton, 1);
         footer.Children.Add(refreshButton);
-        panel.Children.Add(footer);
-        return panel;
+        Grid.SetRow(footer, 2);
+        root.Children.Add(footer);
+
+        return root;
     }
 }

@@ -36,7 +36,7 @@ public static class DemoData
             X = 70,
             Y = 60,
             Width = 430,
-            Height = 470,
+            Height = 380,
         });
         var files = Directory.EnumerateFiles(workRoot).ToList();
         ImportService.ImportPathsAsync(work, files, SilentImportInteraction.Instance).GetAwaiter().GetResult();
@@ -82,7 +82,7 @@ public static class DemoData
                     X = 950,
                     Y = 380,
                     Width = 300,
-                    Height = 230,
+                    Height = 245,
                     Settings = settings,
                 });
             }

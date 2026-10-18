@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using PocketDesk.Core;
 using PocketDesk.Host.Services;
 using PocketDesk.Host.ViewModels;
@@ -13,21 +14,32 @@ using PocketDesk.Shared;
 
 namespace PocketDesk.Host.Views;
 
-/// <summary>卡片外壳：标题、输入焦点指示线、拖拽/缩放、右键菜单。内容由具体 Widget 提供。</summary>
+/// <summary>
+/// 卡片外壳：Win11 Fluent 风格的圆角卡片、标题、输入焦点指示线、拖拽/缩放与操作按钮。
+/// 内容由具体 Widget 提供。
+/// </summary>
 public sealed class CardView : UserControl
 {
+    private static readonly FontFamily UiFont = new("Segoe UI Variable Text,Segoe UI,Microsoft YaHei UI");
+    private static readonly FontFamily IconFont = new("Segoe Fluent Icons,Segoe MDL2 Assets");
+
     private readonly CardViewModel _card;
     private readonly HostServices _host;
     private readonly Border _cardBorder;
     private readonly Border _indicator;
+    private readonly Border _glyphBadge;
     private readonly TextBlock _glyph;
     private readonly TextBlock _title;
     private readonly TextBlock _subtitle;
     private readonly TextBox _titleEditor;
-    private readonly TextBlock _count;
-    private readonly Border _typeBadge;
-    private readonly TextBlock _typeBadgeText;
+    private readonly Border _countPill;
+    private readonly TextBlock _countText;
+    private readonly Button _settingsButton;
     private readonly Button _menuButton;
+    private readonly Button _viewButton;
+    private readonly Button _openFolderButton;
+    private readonly TextBlock _footerHint;
+    private readonly Grid _footer;
     private readonly ContentControl _contentHost;
     private readonly Grid _header;
     private Point _dragStart;
@@ -57,6 +69,7 @@ public sealed class CardView : UserControl
         _card = card;
         _host = host;
         Focusable = true;
+        FontFamily = UiFont;
 
         _indicator = new Border
         {
@@ -69,15 +82,25 @@ public sealed class CardView : UserControl
 
         _glyph = new TextBlock
         {
-            FontFamily = new FontFamily("Segoe Fluent Icons,Segoe MDL2 Assets"),
+            FontFamily = IconFont,
             FontSize = 16,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(14, 0, 8, 0),
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
+        _glyphBadge = new Border
+        {
+            Width = 34,
+            Height = 34,
+            CornerRadius = new CornerRadius(10),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(12, 0, 10, 0),
+            Child = _glyph,
         };
 
         _title = new TextBlock
         {
-            FontSize = 13.5,
+            FontFamily = UiFont,
+            FontSize = 14,
             FontWeight = FontWeight.SemiBold,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -85,77 +108,77 @@ public sealed class CardView : UserControl
 
         _subtitle = new TextBlock
         {
+            FontFamily = UiFont,
             FontSize = 10.5,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
+            Margin = new Thickness(0, 1, 0, 0),
         };
 
         _titleEditor = new TextBox
         {
-            FontSize = 13.5,
-            Padding = new Thickness(4, 2),
-            MinHeight = 24,
+            FontFamily = UiFont,
+            FontSize = 13,
+            Padding = new Thickness(6, 3),
+            MinHeight = 26,
             IsVisible = false,
-            CornerRadius = new CornerRadius(5),
+            CornerRadius = new CornerRadius(6),
             BorderThickness = new Thickness(1),
         };
         _titleEditor.KeyDown += OnTitleEditorKeyDown;
         _titleEditor.LostFocus += (_, _) => CommitRename();
 
-        var titleStack = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto"), VerticalAlignment = VerticalAlignment.Center };
+        var titleStack = new Grid
+        {
+            RowDefinitions = new RowDefinitions("Auto,Auto"),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
         titleStack.Children.Add(_title);
         Grid.SetRow(_subtitle, 1);
         titleStack.Children.Add(_subtitle);
         titleStack.Children.Add(_titleEditor);
 
-        _count = new TextBlock
+        _countText = new TextBlock
         {
+            FontFamily = UiFont,
             FontSize = 10.5,
+            FontWeight = FontWeight.Medium,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(6, 0, 4, 0),
+        };
+        _countPill = new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(8, 3),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(4, 0, 4, 0),
             IsVisible = false,
+            Child = _countText,
         };
 
-        _typeBadgeText = new TextBlock { FontSize = 9.5, FontWeight = FontWeight.Medium };
-        _typeBadge = new Border
+        _settingsButton = ChromeButton("\uE713", "设置", () => _host.OpenSettings());
+        Button? menuButton = null;
+        menuButton = ChromeButton("\uE712", "更多操作", () =>
         {
-            CornerRadius = new CornerRadius(7),
-            Padding = new Thickness(6, 2),
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(6, 0, 2, 0),
-            IsVisible = false,
-            Child = _typeBadgeText,
-        };
-
-        _menuButton = new Button
-        {
-            Content = "\uE712",
-            FontFamily = new FontFamily("Segoe Fluent Icons,Segoe MDL2 Assets"),
-            FontSize = 14,
-            Width = 30,
-            Height = 28,
-            Padding = new Thickness(0),
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            CornerRadius = new CornerRadius(6),
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 6, 0),
-            Focusable = false,
-        };
-        _menuButton.Click += (_, _) => ShowMenu(_menuButton);
+            if (menuButton is not null)
+            {
+                ShowMenu(menuButton);
+            }
+        });
+        _menuButton = menuButton;
 
         _header = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto,Auto"),
-            Height = 40,
+            Height = 52,
+            Background = Brushes.Transparent,
         };
-        _header.Children.Add(_glyph);
+        _header.Children.Add(_glyphBadge);
         Grid.SetColumn(titleStack, 1);
         _header.Children.Add(titleStack);
-        Grid.SetColumn(_count, 2);
-        _header.Children.Add(_count);
-        Grid.SetColumn(_typeBadge, 3);
-        _header.Children.Add(_typeBadge);
+        Grid.SetColumn(_countPill, 2);
+        _header.Children.Add(_countPill);
+        Grid.SetColumn(_settingsButton, 3);
+        _header.Children.Add(_settingsButton);
         Grid.SetColumn(_menuButton, 4);
         _header.Children.Add(_menuButton);
 
@@ -165,21 +188,45 @@ public sealed class CardView : UserControl
             VerticalContentAlignment = VerticalAlignment.Stretch,
         };
 
+        _footerHint = new TextBlock
+        {
+            FontFamily = UiFont,
+            FontSize = 10.5,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        _viewButton = ChromeButton("\uE8FD", "切换视图", ToggleView);
+        _openFolderButton = ChromeButton("\uE8B7", "打开文件夹", OpenFolder);
+        _footer = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"),
+            Height = 34,
+            Margin = new Thickness(14, 0, 10, 6),
+            IsVisible = false,
+        };
+        _footer.Children.Add(_footerHint);
+        Grid.SetColumn(_viewButton, 1);
+        _footer.Children.Add(_viewButton);
+        Grid.SetColumn(_openFolderButton, 2);
+        _footer.Children.Add(_openFolderButton);
+
         var layout = new Grid
         {
-            RowDefinitions = new RowDefinitions("Auto,Auto,*"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"),
         };
         layout.Children.Add(_indicator);
         Grid.SetRow(_header, 1);
         layout.Children.Add(_header);
         Grid.SetRow(_contentHost, 2);
         layout.Children.Add(_contentHost);
+        Grid.SetRow(_footer, 3);
+        layout.Children.Add(_footer);
 
         _cardBorder = new Border
         {
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(18),
+            CornerRadius = new CornerRadius(16),
             ClipToBounds = true,
             Child = layout,
         };
@@ -198,11 +245,7 @@ public sealed class CardView : UserControl
         _header.PointerMoved += OnHeaderPointerMoved;
         _header.PointerReleased += OnHeaderPointerReleased;
         _header.PointerCaptureLost += (_, _) => EndDrag();
-        _title.DoubleTapped += (_, e) =>
-        {
-            BeginRename();
-            e.Handled = true;
-        };
+        _header.DoubleTapped += OnHeaderDoubleTapped;
         _header.Cursor = new Cursor(StandardCursorType.SizeAll);
 
         _card.PropertyChanged += (_, e) =>
@@ -213,15 +256,12 @@ public sealed class CardView : UserControl
                 case nameof(CardViewModel.IsDropTarget):
                 case nameof(CardViewModel.CornerRadius):
                 case nameof(CardViewModel.CardOpacity):
-                    UpdateChrome();
-                    break;
                 case nameof(CardViewModel.Title):
                 case nameof(CardViewModel.Subtitle):
                 case nameof(CardViewModel.HeaderGlyph):
                 case nameof(CardViewModel.CountText):
-                case nameof(CardViewModel.TypeBadge):
-                case nameof(CardViewModel.ShowTypeBadge):
                 case nameof(CardViewModel.ShowCount):
+                case nameof(CardViewModel.IsGrid):
                     UpdateChrome();
                     break;
             }
@@ -238,15 +278,11 @@ public sealed class CardView : UserControl
     public void SetContent(Control? content)
     {
         _contentHost.Content = content;
-        _contentHost.Margin = _card.IsBox ? new Thickness(10, 0, 10, 10) : new Thickness(0);
-        _cardBorder.CornerRadius = new CornerRadius(_card.CornerRadius);
+        _contentHost.Margin = _card.IsBox ? new Thickness(12, 0, 12, 0) : new Thickness(0);
+        _cardBorder.CornerRadius = new CornerRadius(Math.Clamp(_card.CornerRadius, 8, 28));
     }
 
-    public void UpdateBounds()
-    {
-        // 由父级 Canvas 通过 Canvas.Left/Top + Width/Height 控制；此方法用于 DPI/尺寸变化后的重绘。
-        InvalidateMeasure();
-    }
+    public void UpdateBounds() => InvalidateMeasure();
 
     public void UpdateZIndex() => ZIndex = _card.ZOrder;
 
@@ -310,7 +346,6 @@ public sealed class CardView : UserControl
             {
                 _card.Instance.DisplayName = name;
                 WidgetRepository.Update(_card.Instance);
-                _card.Instance.DisplayName = name;
                 _host.ViewModel.RefreshCard(_card);
             }
 
@@ -332,17 +367,31 @@ public sealed class CardView : UserControl
     private void UpdateChrome()
     {
         var palette = _host.Theme.Palette;
-        var radius = new CornerRadius(_card.CornerRadius);
+        var radius = new CornerRadius(Math.Clamp(_card.CornerRadius, 8, 28));
         _cardBorder.CornerRadius = radius;
         _indicator.CornerRadius = new CornerRadius(radius.TopLeft, radius.TopRight, 0, 0);
         _indicator.IsVisible = _card.IsInputActive && AppSettingsService.Current.ShowFocusIndicator;
         _indicator.Background = Solid(palette.Accent);
 
-        var background = _card.IsBox
+        var baseColor = _card.IsBox
             ? Color.FromArgb((byte)Math.Clamp((int)Math.Round(_card.CardOpacity * 255), 40, 255),
                 palette.CardBackground.R, palette.CardBackground.G, palette.CardBackground.B)
             : palette.CardBackground;
-        _cardBorder.Background = Solid(background);
+        var bottom = Color.FromArgb(
+            baseColor.A,
+            (byte)Math.Max(0, baseColor.R - (palette.IsDark ? 9 : 4)),
+            (byte)Math.Max(0, baseColor.G - (palette.IsDark ? 8 : 4)),
+            (byte)Math.Max(0, baseColor.B - (palette.IsDark ? 6 : 3)));
+        _cardBorder.Background = new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(baseColor, 0),
+                new GradientStop(bottom, 1),
+            },
+        };
 
         var borderBase = palette.IsDark ? Colors.White : Colors.Black;
         var borderAlpha = _card.IsBox && _card.Box is not null
@@ -350,36 +399,100 @@ public sealed class CardView : UserControl
             : AppSettingsService.Current.CardBorderOpacity;
         _cardBorder.BorderBrush = _card.IsDropTarget
             ? Solid(palette.Accent)
-            : Solid(Color.FromArgb((byte)Math.Clamp((int)Math.Round(borderAlpha * 255), 0, 255), borderBase.R, borderBase.G, borderBase.B));
+            : Solid(Color.FromArgb((byte)Math.Clamp((int)Math.Round(borderAlpha * 255), 0, 255),
+                borderBase.R, borderBase.G, borderBase.B));
         _cardBorder.BorderThickness = new Thickness(_card.IsDropTarget ? 2 : 1);
 
-        var shadowAlpha = (byte)Math.Clamp((int)Math.Round(AppSettingsService.Current.ShadowStrength / 100 * 110), 0, 120);
+        var shadowAlpha = (byte)Math.Clamp((int)Math.Round(AppSettingsService.Current.ShadowStrength / 100 * 120), 0, 130);
         _cardBorder.BoxShadow = shadowAlpha == 0
             ? default
             : new BoxShadows(BoxShadow.Parse(
-                $"0 10 30 0 #{(shadowAlpha):X2}{palette.Shadow.R:X2}{palette.Shadow.G:X2}{palette.Shadow.B:X2}"));
+                $"0 12 34 0 #{(shadowAlpha):X2}{palette.Shadow.R:X2}{palette.Shadow.G:X2}{palette.Shadow.B:X2}"));
 
         _glyph.Text = _card.HeaderGlyph;
-        _glyph.Foreground = Solid(palette.TextSecondary);
+        _glyph.Foreground = Solid(palette.Accent);
+        _glyphBadge.Background = Solid(Color.FromArgb(42, palette.Accent.R, palette.Accent.G, palette.Accent.B));
         _title.Text = _card.Title;
         _title.Foreground = Solid(palette.TextPrimary);
         _subtitle.Text = _card.Subtitle;
         _subtitle.Foreground = Solid(palette.TextMuted);
-        _count.Text = _card.CountText;
-        _count.Foreground = Solid(palette.TextMuted);
-        _count.IsVisible = _card.ShowCount;
-        _typeBadge.IsVisible = _card.ShowTypeBadge;
-        _typeBadge.Background = Solid(Color.FromArgb(38, palette.Accent.R, palette.Accent.G, palette.Accent.B));
-        _typeBadgeText.Text = _card.TypeBadge;
-        _typeBadgeText.Foreground = Solid(palette.Accent);
+        _countText.Text = _card.CountText;
+        _countText.Foreground = Solid(palette.TextSecondary);
+        _countPill.Background = Solid(palette.Hover);
+        _countPill.IsVisible = _card.ShowCount && _card.IsBox;
+        _settingsButton.Foreground = Solid(palette.TextSecondary);
         _menuButton.Foreground = Solid(palette.TextSecondary);
+        _viewButton.Foreground = Solid(palette.TextSecondary);
+        _openFolderButton.Foreground = Solid(palette.TextSecondary);
+        _footerHint.Foreground = Solid(palette.TextMuted);
+        _footer.IsVisible = _card.IsBox;
+        _footerHint.Text = BuildFooterHint();
+        _viewButton.Content = _card.IsGrid ? "\uE8FD" : "\uE80A";
+        ToolTip.SetTip(_viewButton, _card.IsGrid ? "切换为列表" : "切换为网格");
 
         _titleEditor.Background = Solid(palette.InputBackground);
         _titleEditor.Foreground = Solid(palette.TextPrimary);
         _titleEditor.BorderBrush = Solid(palette.Accent);
-
-        _header.Background = Brushes.Transparent;
         ContextMenu = BuildMenu();
+    }
+
+    private string BuildFooterHint()
+    {
+        if (!_card.IsBox)
+        {
+            return string.Empty;
+        }
+
+        if (_card.Items.Count == 0)
+        {
+            return "拖入文件即可收纳";
+        }
+
+        var sort = _card.Box?.SortField?.ToLowerInvariant() switch
+        {
+            "type" => "类型排序",
+            "modified" => "修改时间",
+            "added" => "添加时间",
+            "custom" => "自定义排序",
+            _ => "名称排序",
+        };
+        return $"{sort} · {(_card.IsGrid ? "网格" : "列表")}";
+    }
+
+    private Button ChromeButton(string glyph, string tooltip, Action click)
+    {
+        var button = new Button
+        {
+            Content = glyph,
+            FontFamily = IconFont,
+            FontSize = 14,
+            Width = 30,
+            Height = 30,
+            Padding = new Thickness(0),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            CornerRadius = new CornerRadius(7),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 2, 0),
+            Focusable = false,
+            Cursor = new Cursor(StandardCursorType.Hand),
+        };
+        ToolTip.SetTip(button, tooltip);
+        button.Click += (_, _) => click();
+        button.PointerEntered += (_, _) => button.Background = Solid(_host.Theme.Palette.Hover);
+        button.PointerExited += (_, _) => button.Background = Brushes.Transparent;
+        button.AddHandler(
+            PointerPressedEvent,
+            (_, _) => button.Background = Solid(Color.FromArgb(38,
+                _host.Theme.Palette.Accent.R, _host.Theme.Palette.Accent.G, _host.Theme.Palette.Accent.B)),
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        button.AddHandler(
+            PointerReleasedEvent,
+            (_, _) => button.Background = Solid(_host.Theme.Palette.Hover),
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        return button;
     }
 
     private void OnThemeChanged() => Dispatcher.UIThread.Post(UpdateChrome);
@@ -403,38 +516,38 @@ public sealed class CardView : UserControl
 
     private void OnPointerPressedTunnel(object? sender, PointerPressedEventArgs e)
     {
-        // 点击卡片任意位置都把卡片提到最前，但不改变其他卡片的视觉状态。
         _host.ViewModel.BringToFront(_card);
 
-        if (_card.IsInputActive && e.Source is not TextBox && e.Source is not Button)
+        if (_card.IsInputActive && !IsInteractiveSource(e.Source))
         {
             _host.Window?.EndInputFocus(restoreForeground: true);
         }
+    }
 
-        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+    private bool IsInteractiveSource(object? source)
+    {
+        for (var visual = source as Visual; visual is not null && visual != _header; visual = visual.GetVisualParent())
         {
-            ShowMenu(this);
-            e.Handled = true;
+            if (visual is Button || visual is TextBox)
+            {
+                return true;
+            }
         }
+
+        return false;
     }
 
     private void OnHeaderPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (!e.GetCurrentPoint(_header).Properties.IsLeftButtonPressed)
-        {
-            return;
-        }
-
-        if (e.Source is Button || e.Source is TextBox)
+        if (!e.GetCurrentPoint(_header).Properties.IsLeftButtonPressed || IsInteractiveSource(e.Source))
         {
             return;
         }
 
         _pressed = true;
         _dragging = false;
-        _dragStart = e.GetPosition(this);
+        _dragStart = WindowPoint(e);
         _cardStart = new Point(_card.X, _card.Y);
-        // 不在按下时立即捕获指针，否则会吞掉标题的双击重命名手势；超过阈值再捕获。
     }
 
     private void OnHeaderPointerMoved(object? sender, PointerEventArgs e)
@@ -444,7 +557,7 @@ public sealed class CardView : UserControl
             return;
         }
 
-        var point = e.GetPosition(this);
+        var point = WindowPoint(e);
         var dx = point.X - _dragStart.X;
         var dy = point.Y - _dragStart.Y;
         if (!_dragging && Math.Abs(dx) < 4 && Math.Abs(dy) < 4)
@@ -454,8 +567,9 @@ public sealed class CardView : UserControl
 
         _dragging = true;
         e.Pointer.Capture(_header);
-        var maxX = Math.Max(0, (TopLevel.GetTopLevel(this)?.ClientSize.Width ?? 1200) - _card.Width - 8);
-        var maxY = Math.Max(0, (TopLevel.GetTopLevel(this)?.ClientSize.Height ?? 700) - _card.Height - 8);
+        var topLevel = TopLevel.GetTopLevel(this);
+        var maxX = Math.Max(0, (topLevel?.ClientSize.Width ?? 1200) - _card.Width - 8);
+        var maxY = Math.Max(0, (topLevel?.ClientSize.Height ?? 700) - _card.Height - 8);
         _card.X = Math.Clamp(_cardStart.X + dx, 8, maxX);
         _card.Y = Math.Clamp(_cardStart.Y + dy, 8, maxY);
         _host.Window?.UpdateCardBounds(_card);
@@ -467,16 +581,58 @@ public sealed class CardView : UserControl
         if (_dragging)
         {
             _card.SavePlacement();
-            _host.ShowToast($"「{_card.Title}」位置已保存");
         }
 
         EndDrag();
+    }
+
+    private void OnHeaderDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (IsInteractiveSource(e.Source))
+        {
+            return;
+        }
+
+        BeginRename();
+        e.Handled = true;
     }
 
     private void EndDrag()
     {
         _pressed = false;
         _dragging = false;
+    }
+
+    private Point WindowPoint(PointerEventArgs e)
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        return topLevel is null ? e.GetPosition(this) : e.GetPosition(topLevel);
+    }
+
+    private void ToggleView()
+    {
+        if (!_card.IsBox || _card.Box is null)
+        {
+            return;
+        }
+
+        _card.UpdateBoxAppearance(a => a.View = _card.IsGrid ? "list" : "grid");
+        _host.Window?.RefreshCardContent(_card);
+        UpdateChrome();
+    }
+
+    private void OpenFolder()
+    {
+        if (_card.Box is null)
+        {
+            return;
+        }
+
+        var path = _card.Box.Type == BoxType.Target && !string.IsNullOrEmpty(_card.Box.TargetPath)
+            ? _card.Box.TargetPath
+            : AppPaths.BoxStorage(_card.Box.Id);
+        Directory.CreateDirectory(path);
+        ShellService.Open(path);
     }
 
     private void AddResizeGrips(Panel root)
@@ -522,7 +678,7 @@ public sealed class CardView : UserControl
 
             _resizing = true;
             _resizeDirection = direction;
-            _resizeStartPoint = e.GetPosition(this);
+            _resizeStartPoint = WindowPoint(e);
             _resizeStartSize = new Size(_card.Width, _card.Height);
             e.Pointer.Capture(grip);
             e.Handled = true;
@@ -534,7 +690,7 @@ public sealed class CardView : UserControl
                 return;
             }
 
-            var point = e.GetPosition(this);
+            var point = WindowPoint(e);
             var dx = point.X - _resizeStartPoint.X;
             var dy = point.Y - _resizeStartPoint.Y;
             var width = _resizeStartSize.Width;
@@ -604,6 +760,7 @@ public sealed class CardView : UserControl
         var menu = new ContextMenu();
         menu.Items.Add(MenuItem("重命名", BeginRename));
         menu.Items.Add(MenuItem("置于最前", () => _host.ViewModel.BringToFront(_card)));
+        menu.Items.Add(MenuItem("打开设置", () => _host.OpenSettings()));
 
         if (_card.IsBox && _card.Box is not null)
         {
@@ -622,28 +779,18 @@ public sealed class CardView : UserControl
 
             var size = new MenuItem { Header = "卡片尺寸" };
             size.Items.Add(MenuItem("紧凑", () => ResizeTo(320, 300)));
-            size.Items.Add(MenuItem("标准", () => ResizeTo(380, 360)));
-            size.Items.Add(MenuItem("宽", () => ResizeTo(520, 400)));
+            size.Items.Add(MenuItem("标准", () => ResizeTo(380, 380)));
+            size.Items.Add(MenuItem("宽", () => ResizeTo(520, 420)));
             menu.Items.Add(size);
 
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem("新建收纳盒", () => _host.ViewModel.AddBox(null, BoxType.Normal, null)));
-            menu.Items.Add(MenuItem("打开所在位置", () =>
-            {
-                var path = _card.Box.Type == BoxType.Target && !string.IsNullOrEmpty(_card.Box.TargetPath)
-                    ? _card.Box.TargetPath
-                    : AppPaths.BoxStorage(_card.Box.Id);
-                Directory.CreateDirectory(path);
-                ShellService.Open(path);
-            }));
-            menu.Items.Add(MenuItem("组件设置", () => _host.OpenSettings()));
+            menu.Items.Add(MenuItem("打开所在位置", OpenFolder));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem("删除收纳盒", DeleteBox));
         }
         else
         {
-            menu.Items.Add(MenuItem("组件设置", () => _host.OpenSettings()));
-            menu.Items.Add(MenuItem("打开设置界面", () => _host.OpenSettings()));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem("移除组件", RemoveWidget));
         }
@@ -655,6 +802,7 @@ public sealed class CardView : UserControl
     {
         _card.UpdateBoxAppearance(a => a.View = view);
         _host.Window?.RefreshCardContent(_card);
+        UpdateChrome();
     }
 
     private MenuItem SortItem(string field, string label)

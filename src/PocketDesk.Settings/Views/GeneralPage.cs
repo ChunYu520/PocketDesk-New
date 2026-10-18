@@ -110,7 +110,7 @@ public sealed class GeneralPage : UserControl
 
     private Border AccentCard()
     {
-        var follow = Ui.Toggle(_settings.FollowSystemAccent, "开", "关");
+        var follow = Ui.Toggle(_settings.FollowSystemAccent);
         follow.Toggled += (_, _) =>
         {
             if (_loading)

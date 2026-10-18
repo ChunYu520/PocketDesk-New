@@ -95,9 +95,7 @@ public sealed class CardViewModel : ObservableObject
 
     public string Title => IsBox ? Box?.Name ?? "收纳盒" : Instance.DisplayName;
 
-    public string Subtitle => IsBox
-        ? $"{Box!.TypeShortLabel} · {Items.Count} 项"
-        : $"组件 · {_host.Widgets.Get(Instance.WidgetTypeId)?.DisplayName ?? "未知"}";
+    public string Subtitle => IsBox ? Box!.TypeLabel : "桌面组件";
 
     public string HeaderGlyph => IsBox ? Box!.TypeGlyph : Widget.Glyph;
 

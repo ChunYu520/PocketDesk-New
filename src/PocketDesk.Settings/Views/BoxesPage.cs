@@ -132,6 +132,8 @@ public sealed class BoxesPage : UserControl
         {
             IsOn = box.IsVisible,
             MinWidth = 0,
+            OnContent = null,
+            OffContent = null,
             VerticalAlignment = VerticalAlignment.Center,
         };
         visibility.Toggled += async (_, _) =>

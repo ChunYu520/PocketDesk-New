@@ -4,6 +4,14 @@
 
 PocketDesk-New 用 **Avalonia** 实现透明、无焦点、停靠桌面层的组件宿主，用 **WinUI 3** 实现独立的设置界面，两者通过共享契约 + 命名管道 IPC 协作。它复用了旧版 PocketDesk 的 SQLite / Journal / 文件安全逻辑，但把“多窗口收纳盒”重构成了“一个组件层上的卡片”。
 
+## 1.0.1 更新
+
+- **Win11 Fluent 视觉重做**：卡片改为圆角渐变玻璃、胶囊搜索框、图标徽章、层级化标题/副标题、底部状态栏；按钮补齐 hover / pressed / cursor 状态。
+- **修复卡片拖动/缩放漂移**：指针坐标统一使用窗口坐标系，移动/缩放不再因卡片自身位移产生反馈抖动。
+- **修复设置打不开**：WinUI 3 发布补齐 `.pri` / `.xbf` 资源；新增卡片标题栏齿轮按钮与 `host.openSettings` IPC，与托盘“打开设置”走同一路径。
+- **设置界面 Win11 化**：Mica 背景、自定义标题栏、NavigationView 图标导航、页面卡片留白与滚动修复。
+- 版本号提升至 **1.0.1**，重新生成 ARM64 / x64 自包含 MSI。
+
 ![PocketDesk-New 深色主题](docs/host-dark.png)
 
 浅色主题：
@@ -13,6 +21,7 @@ PocketDesk-New 用 **Avalonia** 实现透明、无焦点、停靠桌面层的组
 ## 已实现（M1 / M2 / M3 核心）
 
 - **桌面组件层**：单个无边框透明窗口，覆盖主屏工作区，`WS_EX_TOOLWINDOW` + `WS_EX_NOACTIVATE`，不进入任务栏 / Alt+Tab，默认不抢系统焦点。
+- **Win11 Fluent 卡片**：圆角渐变玻璃、图标徽章、胶囊搜索框、底部视图/文件夹操作栏；按钮和收纳项都有明确的 hover / pressed / selected 状态。
 - **点击穿透**：`WM_NCHITTEST` 对卡片区域返回 `HTCLIENT`，对卡片之间的透明区域返回 `HTTRANSPARENT`；点击/框选落到桌面或下层应用。
 - **视觉冻结 + 按需激活**：所有卡片使用自定义画刷，窗口失去焦点不会变灰；点击搜索框/重命名框时才临时获取系统键盘焦点，获得焦点的卡片顶部显示强调色指示线，Esc/失焦后把焦点交还原应用。
 - **桌面层级**：窗口停靠在 Progman/WorkerW 之上、普通应用窗口之下；普通应用最大化时会完整盖住组件层；Win+D 时临时浮起，结束后恢复。
@@ -21,7 +30,8 @@ PocketDesk-New 用 **Avalonia** 实现透明、无焦点、停靠桌面层的组
 - **文件安全**：普通盒真实移动文件并写 journal；启动时自动恢复未完成移动；同名冲突（保留两者/替换/跳过/取消）；大文件确认；云占位符/UNC/回收站保护；映射盒只存引用；删除时原位还原。
 - **组件架构基座**：`IWidget` / `IWidgetContext` / `WidgetSettingsSchema`；内置组件由宿主注册，外部组件从 `Widgets` 目录动态发现；宿主不引用具体组件程序集。
 - **占位天气 Widget**：独立程序集 + 独立输出，用来验证“宿主不改代码即可加载新组件”（AC-06）。
-- **WinUI 3 设置界面**：常规 / 组件 / 收纳盒 / 存储与诊断四个页面；Schema 驱动动态渲染组件配置；通过命名管道即时同步到宿主。
+- **WinUI 3 设置界面**：Mica 背景 + 自定义标题栏 + NavigationView；常规 / 组件 / 收纳盒 / 存储与诊断四个页面；Schema 驱动动态渲染组件配置；通过命名管道即时同步到宿主。
+- **设置入口**：卡片标题栏齿轮、卡片右键菜单、托盘菜单三条路径都可打开设置。
 - **托盘与单实例**：打开设置、新建收纳盒、显示/隐藏全部、退出；重复启动会唤醒已有实例。
 
 ## 设置界面
@@ -89,8 +99,8 @@ src\PocketDesk.Settings\bin\Debug\net10.0-windows10.0.26100.0\win-arm64\PocketDe
 输出目录：`C:\Users\Admin1\Desktop\PocketDesk\Pack-new`
 
 ```text
-PocketDesk-New-1.0.0-ARM64.msi
-PocketDesk-New-1.0.0-x64.msi
+PocketDesk-New-1.0.1-ARM64.msi
+PocketDesk-New-1.0.1-x64.msi
 SHA256SUMS.txt
 安装说明-ARM64.txt / 安装说明-x64.txt
 ```
@@ -175,7 +185,7 @@ SHA256SUMS.txt
 # 数据层：26 个 xUnit 测试
 dotnet test tests\PocketDesk.Core.Tests\PocketDesk.Core.Tests.csproj
 
-# 端到端：真实启动宿主，36 项检查
+# 端到端：真实启动宿主，37 项检查
 .\scripts\verify.ps1
 ```
 
@@ -187,7 +197,7 @@ dotnet test tests\PocketDesk.Core.Tests\PocketDesk.Core.Tests.csproj
 - 合成点击搜索框后窗口临时激活，Esc 后焦点交还 DSH。
 - IPC 快照、组件类型、Schema 字段数、设置即时生效、创建/删除收纳盒、添加/移除天气、Schema 键值持久化、诊断导出、网格排列。
 
-最近一次运行：**36 通过，0 失败**。
+最近一次运行：**37 通过，0 失败**。
 
 ## 性能实测
 

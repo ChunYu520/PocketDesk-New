@@ -137,6 +137,7 @@ public sealed class IpcServer : IDisposable
                 IpcCommands.HideAll => HideAll(request),
                 IpcCommands.OpenDataDirectory => OpenPath(request, AppPaths.Root),
                 IpcCommands.OpenLogDirectory => OpenPath(request, AppPaths.LogsDir),
+                IpcCommands.OpenSettings => OpenSettings(request),
                 IpcCommands.ExportDiagnostics => ExportDiagnostics(request),
                 IpcCommands.Shutdown => Shutdown(request),
                 _ => IpcResponse.Failure(request.Id, $"未知命令：{request.Command}"),
@@ -369,6 +370,12 @@ public sealed class IpcServer : IDisposable
     {
         Directory.CreateDirectory(path);
         ShellService.Open(path);
+        return IpcResponse.Success(request.Id, new OperationResult { Success = true });
+    }
+
+    private IpcResponse OpenSettings(IpcRequest request)
+    {
+        _host.OpenSettings();
         return IpcResponse.Success(request.Id, new OperationResult { Success = true });
     }
 

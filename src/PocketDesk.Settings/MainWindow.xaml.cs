@@ -1,10 +1,12 @@
+using Microsoft.UI;
+using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
-
+using System.Runtime.InteropServices;
 using PocketDesk.Settings.Services;
 using PocketDesk.Settings.Views;
 using PocketDesk.Shared;
@@ -13,6 +15,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Graphics;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
+using Windows.UI;
 using WinRT.Interop;
 
 namespace PocketDesk.Settings;
@@ -38,14 +41,49 @@ public sealed partial class MainWindow : Window
         var appWindow = AppWindow.GetFromWindowId(windowId);
         var display = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
         var work = display.WorkArea;
-        var width = Math.Min((int)(work.Width * 0.8), 2080);
-        var height = Math.Min((int)(work.Height * 0.86), 1440);
+        var dpi = GetDpiForWindow(hwnd);
+        var scale = dpi <= 0 ? 1.0 : dpi / 96.0;
+        var width = Math.Min((int)Math.Round(1120 * scale), Math.Max(640, work.Width - 80));
+        var height = Math.Min((int)Math.Round(780 * scale), Math.Max(520, work.Height - 80));
         appWindow.MoveAndResize(new RectInt32(
             work.X + (work.Width - width) / 2,
             work.Y + (work.Height - height) / 2,
             width,
             height));
         appWindow.Title = "PocketDesk 设置";
+
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+        try
+        {
+            var titleBar = appWindow.TitleBar;
+            titleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
+            titleBar.ButtonForegroundColor = Ui.IsDark ? Microsoft.UI.Colors.White : Color.FromArgb(255, 30, 30, 30);
+        }
+        catch
+        {
+            // 旧系统不支持自定义标题栏按钮颜色时忽略。
+        }
+
+        if (MicaController.IsSupported())
+        {
+            SystemBackdrop = new MicaBackdrop { Kind = MicaKind.BaseAlt };
+            RootGrid.Background = new SolidColorBrush(Color.FromArgb(0x1C, 0, 0, 0));
+        }
+        else
+        {
+            RootGrid.Background = Ui.Brush("SolidBackgroundFillColorBaseBrush",
+                Ui.IsDark ? Color.FromArgb(255, 32, 32, 32) : Color.FromArgb(255, 243, 243, 243));
+        }
+
+        if (_captureDirectory is not null)
+        {
+            // RenderTargetBitmap 不包含系统 Mica 背景，截图模式使用纯色画布。
+            RootGrid.Background = new SolidColorBrush(Ui.IsDark
+                ? Color.FromArgb(255, 32, 32, 32)
+                : Color.FromArgb(255, 243, 243, 243));
+        }
 
         _saveTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
         _saveTimer.Interval = TimeSpan.FromMilliseconds(350);
@@ -90,7 +128,7 @@ public sealed partial class MainWindow : Window
         {
             _snapshot = await _client.GetSnapshotAsync();
             StatusDot.Fill = new SolidColorBrush(Microsoft.UI.Colors.SeaGreen);
-            StatusText.Text = $"已连接 · 宿主 v{_snapshot.HostVersion}";
+            TitleStatusText.Text = $"已连接 · 宿主 v{_snapshot.HostVersion}";
             RefreshButton.Content = "刷新";
             ShowPage(_selectedTag);
         }
@@ -98,7 +136,7 @@ public sealed partial class MainWindow : Window
         {
             _snapshot = null;
             StatusDot.Fill = new SolidColorBrush(Microsoft.UI.Colors.IndianRed);
-            StatusText.Text = "未连接宿主";
+            TitleStatusText.Text = "未连接宿主";
             RefreshButton.Content = "重试";
             ShowDisconnected(ex.Message);
         }
@@ -198,7 +236,7 @@ public sealed partial class MainWindow : Window
                 _snapshot.Settings = _pendingSettings.Clone();
             }
 
-            StatusText.Text = $"已连接 · 设置已保存 {DateTime.Now:HH:mm:ss}";
+            TitleStatusText.Text = $"已连接 · 设置已保存 {DateTime.Now:HH:mm:ss}";
             RootGrid.RequestedTheme = _pendingSettings.Theme switch
             {
                 "Light" => ElementTheme.Light,
@@ -346,6 +384,9 @@ public sealed partial class MainWindow : Window
 
         return null;
     }
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hwnd);
 
     public ContentDialog CreateDialog(string title, string primaryText, string closeText, UIElement content)
     {

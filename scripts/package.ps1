@@ -7,7 +7,7 @@
 param(
     [ValidateSet("ARM64", "x64")]
     [string[]]$Architectures = @("ARM64", "x64"),
-    [string]$Version = "1.0.0",
+    [string]$Version = "1.0.1",
     [string]$Output = "C:\Users\Admin1\Desktop\PocketDesk\Pack-new"
 )
 

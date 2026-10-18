@@ -319,6 +319,29 @@ internal static class Program
 
         var ping = await SendAsync<JsonElement>(IpcCommands.Ping);
         Check("Ping 往返成功", ping is { ValueKind: JsonValueKind.Object });
+
+        var settingsBefore = Process.GetProcessesByName("PocketDesk.Settings").Select(p => p.Id).ToHashSet();
+        await SendAsync<OperationResult>(IpcCommands.OpenSettings);
+        Process? settingsProcess = null;
+        for (var attempt = 0; attempt < 20 && settingsProcess is null; attempt++)
+        {
+            await Task.Delay(300);
+            settingsProcess = Process.GetProcessesByName("PocketDesk.Settings")
+                .FirstOrDefault(p => !settingsBefore.Contains(p.Id));
+        }
+
+        Check("设置界面可从宿主打开（托盘/齿轮同一路径）", settingsProcess is not null);
+        if (settingsProcess is not null)
+        {
+            try
+            {
+                settingsProcess.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // 设置进程可能已自行退出。
+            }
+        }
     }
 
     private static async Task<IntPtr> WaitForWindowAsync(int processId, TimeSpan timeout)

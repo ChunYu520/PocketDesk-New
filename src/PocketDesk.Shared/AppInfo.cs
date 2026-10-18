@@ -4,7 +4,7 @@ namespace PocketDesk.Shared;
 public static class AppInfo
 {
     public const string ProductName = "PocketDesk-New";
-    public const string Version = "1.0.0";
+    public const string Version = "1.0.1";
     public const string HostPipeName = "PocketDeskNew.Host.v1";
     public const string HostMutexName = @"Local\PocketDesk-New.Host";
 
