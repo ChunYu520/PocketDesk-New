@@ -80,19 +80,13 @@ public sealed class BoxesPage : UserControl
             ColumnSpacing = 12,
         };
 
-        var icon = new FontIcon
+        var iconGlyph = box.Type switch
         {
-            Glyph = box.Type switch
-            {
-                "Mapped" => "\uE71B",
-                "Target" => "\uE8DE",
-                _ => "\uE8B7",
-            },
-            FontSize = 22,
-            Foreground = Ui.Accent,
-            VerticalAlignment = VerticalAlignment.Center,
+            "Mapped" => "\uE71B",
+            "Target" => "\uE8DE",
+            _ => "\uE8B7",
         };
-        header.Children.Add(icon);
+        header.Children.Add(Ui.IconTile(iconGlyph, 40, 20));
 
         var text = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(new TextBlock

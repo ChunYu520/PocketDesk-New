@@ -4,7 +4,14 @@
 
 PocketDesk-New 用 **Avalonia** 实现透明、无焦点、停靠桌面层的组件宿主，用 **WinUI 3** 实现独立的设置界面，两者通过共享契约 + 命名管道 IPC 协作。它复用了旧版 PocketDesk 的 SQLite / Journal / 文件安全逻辑，但把“多窗口收纳盒”重构成了“一个组件层上的卡片”。
 
-> [下载 v1.0.1 安装包](https://github.com/ChunYu520/PocketDesk-New/releases/tag/v1.0.1) · [反馈问题](https://github.com/ChunYu520/PocketDesk-New/issues)
+> [下载 v1.0.2 安装包](https://github.com/ChunYu520/PocketDesk-New/releases/tag/v1.0.2) · [反馈问题](https://github.com/ChunYu520/PocketDesk-New/issues)
+
+## 1.0.2 更新
+
+- **修复收纳盒图标偏移**：网格收纳项改为整体居中排列，2 个图标不再挤在左侧；图标与名称统一居中。
+- **设置页图标对齐**：收纳盒/组件列表使用 Win11 图标底座，图标与标题、副标题垂直居中，修复 FontIcon 基线造成的视觉偏移。
+- **网格/列表图标居中**：列表模式图标在固定列内居中，不再贴左。
+- 版本号提升至 **1.0.2**，重新生成 ARM64 / x64 自包含 MSI。
 
 ## 1.0.1 更新
 
@@ -101,8 +108,8 @@ src\PocketDesk.Settings\bin\Debug\net10.0-windows10.0.26100.0\win-arm64\PocketDe
 输出目录：`C:\Users\Admin1\Desktop\PocketDesk\Pack-new`
 
 ```text
-PocketDesk-New-1.0.1-ARM64.msi
-PocketDesk-New-1.0.1-x64.msi
+PocketDesk-New-1.0.2-ARM64.msi
+PocketDesk-New-1.0.2-x64.msi
 SHA256SUMS.txt
 安装说明-ARM64.txt / 安装说明-x64.txt
 ```

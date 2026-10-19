@@ -2,12 +2,12 @@
 # 用法：
 #   .\scripts\package.ps1                         # 构建 ARM64 + x64
 #   .\scripts\package.ps1 -Architectures ARM64    # 只构建当前架构
-#   .\scripts\package.ps1 -Version 1.0.1
+#   .\scripts\package.ps1 -Version 1.0.2
 [CmdletBinding()]
 param(
     [ValidateSet("ARM64", "x64")]
     [string[]]$Architectures = @("ARM64", "x64"),
-    [string]$Version = "1.0.1",
+    [string]$Version = "1.0.2",
     [string]$Output = "C:\Users\Admin1\Desktop\PocketDesk\Pack-new"
 )
 

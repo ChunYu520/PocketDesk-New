@@ -1,4 +1,4 @@
-﻿using Microsoft.UI;
+using Microsoft.UI;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -54,6 +54,35 @@ public static class Ui
         Padding = new Thickness(padding),
         Child = child,
     };
+
+    /// <summary>Win11 风格图标底座：强调色淡底 + 居中图标，避免 FontIcon 基线造成的视觉偏移。</summary>
+    public static Grid IconTile(string glyph, double size = 40, double glyphSize = 20, Brush? foreground = null)
+    {
+        var color = foreground ?? Accent;
+        var tile = new Grid
+        {
+            Width = size,
+            Height = size,
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
+        tile.Children.Add(new Border
+        {
+            Background = color,
+            Opacity = 0.14,
+            CornerRadius = new CornerRadius(size * 0.22),
+        });
+        tile.Children.Add(new FontIcon
+        {
+            Glyph = glyph,
+            FontSize = glyphSize,
+            Foreground = color,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 1, 0, 0),
+        });
+        return tile;
+    }
 
     public static TextBlock PageTitle(string text) => new()
     {

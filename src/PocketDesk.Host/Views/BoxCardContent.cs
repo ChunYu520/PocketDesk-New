@@ -281,7 +281,7 @@ public sealed class BoxCardContent : UserControl
             _list.ItemsPanel = new FuncTemplate<Panel?>(() => new WrapPanel
             {
                 Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Left,
+                HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Top,
             });
         }
@@ -310,6 +310,8 @@ public sealed class BoxCardContent : UserControl
                 Width = _card.IconSize,
                 Height = _card.IconSize,
                 Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
                 Source = item.Icon,
             };
             var placeholder = new TextBlock
@@ -321,7 +323,13 @@ public sealed class BoxCardContent : UserControl
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
             };
-            var iconLayer = new Grid { Width = _card.IconSize, Height = _card.IconSize };
+            var iconLayer = new Grid
+            {
+                Width = _card.IconSize,
+                Height = _card.IconSize,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
             iconLayer.Children.Add(placeholder);
             iconLayer.Children.Add(icon);
             item.PropertyChanged += (_, e) =>
@@ -385,6 +393,8 @@ public sealed class BoxCardContent : UserControl
                 Width = 28,
                 Height = 28,
                 Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
                 Source = item.Icon,
             };
             var placeholder = new TextBlock
@@ -396,7 +406,13 @@ public sealed class BoxCardContent : UserControl
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
             };
-            var iconLayer = new Grid { Width = 32, Height = 32, VerticalAlignment = VerticalAlignment.Center };
+            var iconLayer = new Grid
+            {
+                Width = 32,
+                Height = 32,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
             iconLayer.Children.Add(placeholder);
             iconLayer.Children.Add(icon);
             item.PropertyChanged += (_, e) =>

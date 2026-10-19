@@ -95,13 +95,7 @@ public sealed class WidgetsPage : UserControl
             },
             ColumnSpacing = 10,
         };
-        var icon = new FontIcon
-        {
-            Glyph = type.Glyph,
-            FontSize = 22,
-            Foreground = Ui.Accent,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
+        var icon = Ui.IconTile(type.Glyph, 36, 18);
         top.Children.Add(icon);
 
         var text = new StackPanel { Spacing = 1 };
@@ -178,13 +172,11 @@ public sealed class WidgetsPage : UserControl
             },
             ColumnSpacing = 10,
         };
-        var icon = new FontIcon
-        {
-            Glyph = type?.Glyph ?? "\uE8B7",
-            FontSize = 18,
-            Foreground = selected ? Ui.Accent : Ui.TextSecondary,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
+        var icon = Ui.IconTile(
+            type?.Glyph ?? "\uE8B7",
+            32,
+            16,
+            selected ? Ui.Accent : Ui.TextSecondary);
         grid.Children.Add(icon);
 
         var text = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
